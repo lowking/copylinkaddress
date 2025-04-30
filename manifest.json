@@ -1,16 +1,19 @@
 {
-	"update_url": "https://clients2.google.com/service/update2/crx",
-	"manifest_version": 3,
 	"name": "Copy Link Address",
-	"version": "0.6",
+	"manifest_version": 3,
+	"version": "0.6.5",
 	"description": "Copy link address without right-clicking. Just hover the link and hit Ctrl-C / Cmd-C!",
 	"content_scripts": [
 		{
 			"matches": [
 				"<all_urls>"
 			],
+			"css": [
+				"css/notyf.min.css"
+			],
 			"js": [
-				"jquery-2.0.3.min.js",
+
+				"js/notyf.min.js",
 				"copylinkaddress.js"
 			]
 		}
@@ -18,6 +21,5 @@
 	"icons": {
 		"48": "/icons/icon48.png",
 		"128": "/icons/icon128.png"
-	},
-	"content_security_policy": {}
+	}
 }
