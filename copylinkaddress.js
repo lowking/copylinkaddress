@@ -15,27 +15,30 @@ it is technically a zero-length selection in Chrome. So, the extension goes ahea
 When you move away from the link, the caret position is restored.
 */
 
-// Initialize Notyf for notifications
+/*
+Refactored: Only creates the hidden span when ⌘+C/Ctrl+C is pressed while hovering a link.
+*/
+
 const notyf = new Notyf({
 	duration: 1000,
 	background: 'green',
 });
 
-// Create the hidden span for copying
-let linkAddress = document.createElement('span');
-linkAddress.id = 'copylAddress';
-linkAddress.style.display = 'inline-block';
-linkAddress.style.position = 'fixed';
-linkAddress.style.top = '0em';
-linkAddress.style.right = '-9999em';
-document.body.appendChild(linkAddress);
-
 let previousCaretPosition = -1;
+let hoveredLink = null;
 
-function copyToClipboard() {
+function copyToClipboard(text) {
+	// Create the hidden span only when needed
+	const linkAddress = document.createElement('span');
+	linkAddress.style.display = 'inline-block';
+	linkAddress.style.position = 'fixed';
+	linkAddress.style.top = '0em';
+	linkAddress.style.right = '-9999em';
+	linkAddress.textContent = text;
+	document.body.appendChild(linkAddress);
+
 	selectElement(linkAddress);
 
-	const text = linkAddress.textContent;
 	if (text) {
 		navigator.clipboard.writeText(text).then(() => {
 			notyf.success('Copied to clipboard');
@@ -44,6 +47,11 @@ function copyToClipboard() {
 			console.error('Error copying text to clipboard', err);
 		});
 	}
+
+	// Clean up
+	linkAddress.blur();
+	window.getSelection().removeAllRanges();
+	document.body.removeChild(linkAddress);
 }
 
 function selectElement(el) {
@@ -61,30 +69,32 @@ function selectElement(el) {
 	sel.addRange(range);
 }
 
-function clearLinkAddress() {
-	linkAddress.textContent = "";
-	linkAddress.blur();
-	window.getSelection().removeAllRanges();
-	// Restore caret position if needed
-	if (previousCaretPosition !== -1 && document.activeElement &&
-		(document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) {
-		document.activeElement.selectionStart = previousCaretPosition;
-		document.activeElement.selectionEnd = previousCaretPosition;
+document.addEventListener('mouseover', function (e) {
+	if (e.target.tagName === 'A') {
+		hoveredLink = e.target;
 	}
-	previousCaretPosition = -1;
-}
+});
 
-// Event listeners
+document.addEventListener('mouseout', function (e) {
+	if (e.target.tagName === 'A') {
+		hoveredLink = null;
+	}
+});
+
 document.addEventListener('keydown', function (e) {
-	if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+	if ((e.key === 'c' || e.key === 'C') && (e.ctrlKey || e.metaKey)) {
 		let activeElement = document.activeElement;
 		let focusInput = activeElement && (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA");
 		let inputIdx = -1;
 		if (focusInput) {
 			inputIdx = activeElement.selectionStart;
 		}
-		if (!window.getSelection().toString()) {
-			copyToClipboard();
+		// Only copy if a link is hovered and nothing is selected
+		if (hoveredLink && !window.getSelection().toString()) {
+			const targetHref = hoveredLink.getAttribute('href');
+			if (targetHref) {
+				copyToClipboard(targetHref);
+			}
 		}
 		if (focusInput && inputIdx > -1) {
 			activeElement.selectionStart = inputIdx;
@@ -92,35 +102,4 @@ document.addEventListener('keydown', function (e) {
 		}
 		if (activeElement) activeElement.focus();
 	}
-});
-
-document.addEventListener('mouseover', function (e) {
-	if (e.target.tagName === 'A' && !window.getSelection().toString()) {
-		let targetHref = e.target.getAttribute('href');
-		if (targetHref && (targetHref.startsWith("http") || targetHref.startsWith("javascript"))) {
-			linkAddress.style.position = 'fixed';
-			linkAddress.style.top = '0em';
-			linkAddress.style.right = '-9999em';
-		} else if (targetHref) {
-			// Show the link as a notification using Notyf
-			notyf.open({
-				type: 'info',
-				message: targetHref.length > 100 ? targetHref.substring(0, 100) + '…' : targetHref,
-				duration: 2000,
-				ripple: false,
-				dismissible: true
-			});
-		}
-		linkAddress.textContent = targetHref || "";
-	}
-});
-
-document.addEventListener('mouseout', function (e) {
-	if (e.target.tagName === 'A') {
-		clearLinkAddress();
-	}
-});
-
-window.addEventListener('beforeunload', function () {
-	clearLinkAddress();
 });
