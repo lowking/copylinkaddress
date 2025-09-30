@@ -13,7 +13,6 @@ If, at the time of hover, the cursor was in a textbox (without anything selected
 it is technically a zero-length selection in Chrome. So, the extension goes ahead and clears that selection
 (thereby taking the cursor away from the textbox), saving the caret position.
 When you move away from the link, the caret position is restored.
-
 */
 
 let linkAddress = $('<span id="copylAddress" style="display: inline-block;" />')
@@ -27,20 +26,7 @@ function copyToClipboard (title = "⚠️ Copied　") {
     selectElement(linkAddress)
     document.execCommand('Copy', false, null)
     if (linkAddress.text()) {
-        iziToast.show({
-            color: 'dark',
-            icon: 'icon-contacts',
-            title: title,
-            position: 'topCenter',
-            transitionIn: 'flipInX',
-            transitionOut: 'flipOutX',
-            progressBarColor: 'rgb(0, 255, 184)',
-            imageWidth: 5,
-            layout:2,
-            timeout: 2000,
-            progressBar: true,
-            iconColor: 'rgb(0, 255, 184)'
-        });
+        showToast(title)
     }
 }
 
@@ -70,6 +56,23 @@ function clearLinkAddress() {
     if (previousCaretPosition !== -1) {
         document.activeElement.selectionStart = previousCaretPosition
     }
+}
+
+function showToast(content) {
+    iziToast.show({
+        color: 'dark',
+        icon: 'icon-contacts',
+        title: content.length > 100 ? content.substring(0, 100) : content,
+        position: 'topCenter',
+        transitionIn: 'flipInX',
+        transitionOut: 'flipOutX',
+        progressBarColor: 'rgb(0, 255, 184)',
+        imageWidth: 5,
+        layout: 2,
+        timeout: 2000,
+        progressBar: true,
+        iconColor: 'rgb(0, 255, 184)'
+    })
 }
 
 $(function () {
@@ -106,27 +109,14 @@ $(function () {
     }).on("mouseenter", "a", function () {
         // Everytime the user hovers (enters) a link
         if (!window.getSelection().toString()) {
-            let targetHref = $(this).prop('href')
+            let targetHref = $(this).prop('href') || $(this).attr('original_href')
             $('body').append(linkAddress)
-            if (targetHref.startsWith("http") || targetHref.startsWith("javascript")) {
-                linkAddress.css({position: 'fixed', top: '0em', right: '-9999em'})
+            if (targetHref && (targetHref.startsWith("http") || targetHref.startsWith("javascript"))) {
+                linkAddress.css({ position: 'fixed', top: '0em', right: '-9999em' })
             } else {
                 // linkAddress.css({position: 'fixed', top: '0em', right: '0em'})
                 if (targetHref) {
-                    iziToast.show({
-                        color: 'dark',
-                        icon: 'icon-contacts',
-                        title: targetHref.length > 100 ? targetHref.substring(0, 100) : targetHref,
-                        position: 'topCenter',
-                        transitionIn: 'flipInX',
-                        transitionOut: 'flipOutX',
-                        progressBarColor: 'rgb(0, 255, 184)',
-                        imageWidth: 5,
-                        layout:2,
-                        timeout: 2000,
-                        progressBar: true,
-                        iconColor: 'rgb(0, 255, 184)'
-                    });
+                    showToast(targetHref)
                 }
             }
             linkAddress.text(targetHref)
