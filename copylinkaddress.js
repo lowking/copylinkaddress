@@ -23,14 +23,14 @@ linkAddress.css({position: 'fixed', top: '0em', right: '-9999em'})
 
 let previousCaretPosition = -1
 
-function copyToClipboard () {
+function copyToClipboard (title = "⚠️ Copied　") {
     selectElement(linkAddress)
     document.execCommand('Copy', false, null)
     if (linkAddress.text()) {
         iziToast.show({
             color: 'dark',
             icon: 'icon-contacts',
-            title: '⚠️ Copied　',
+            title: title,
             position: 'topCenter',
             transitionIn: 'flipInX',
             transitionOut: 'flipOutX',
@@ -94,6 +94,12 @@ $(function () {
             }
             if (focusInput && inputIdx > -1) {
                 activeElement.selectionStart = inputIdx
+            }
+            if (!linkAddress.text() && !window.getSelection().toString()) {
+                $('body').append(linkAddress)
+                linkAddress.text(window.location.href)
+                copyToClipboard("⚠️ Url Copied　")
+                clearLinkAddress()
             }
             activeElement.focus()
         }
